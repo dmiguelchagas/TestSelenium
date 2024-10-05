@@ -1,4 +1,3 @@
-import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -12,12 +11,14 @@ import java.util.List;
 public class TestComponentes {
 
     private WebDriver driver;
+    private DSL dsl;
 
     @BeforeMethod
     public void inicializa() {
         driver = new ChromeDriver();
         driver.manage().window().maximize();
         driver.get("file:///" + System.getProperty("user.dir") + "/src/main/resources/componentes.html");
+        dsl = new DSL(driver);
     }
 
     @AfterMethod
@@ -27,39 +28,37 @@ public class TestComponentes {
 
     @Test
     public void deveInteragirComTextFild() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Teste de Digitação!");
+        dsl.escreve("elementosForm:nome","Teste de Digitação!");
 
-        Assert.assertEquals("Teste de Digitação!", driver.findElement(By.id("elementosForm:nome")).getAttribute("value"));
+        Assert.assertEquals("Teste de Digitação!", dsl.obtemValorCampo("elementosForm:nome"));
     }
 
     @Test
     public void deveInteragirComTextArea() {
-        driver.findElement(By.id("elementosForm:sugestoes")).sendKeys("Texto com mais de uma linha \nSegunda\nTerceira\n\nFim!");
+        dsl.escreve("elementosForm:sugestoes","Texto com mais de uma linha \nSegunda\nTerceira\n\nFim!");
 
-        Assert.assertEquals("Texto com mais de uma linha \nSegunda\nTerceira\n\nFim!", driver.findElement(By.id("elementosForm:sugestoes")).getAttribute("value"));
+        Assert.assertEquals("Texto com mais de uma linha \nSegunda\nTerceira\n\nFim!", dsl.obtemValorCampo("elementosForm:sugestoes"));
     }
 
     @Test
     public void deveInteragirComRadioButton() {
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
+        dsl.clicaOpcao("elementosForm:sexo:0");
 
-        Assert.assertTrue(driver.findElement(By.id("elementosForm:sexo:0")).isSelected());
+        Assert.assertTrue(dsl.isOpcaoMarcada("elementosForm:sexo:0"));
     }
 
     @Test
     public void deveInteragirComCheckBox() {
-        driver.findElement(By.id("elementosForm:comidaFavorita:0")).click();
+       dsl.clicaOpcao("elementosForm:comidaFavorita:0");
 
-        Assert.assertTrue(driver.findElement(By.id("elementosForm:comidaFavorita:0")).isSelected());
+       Assert.assertTrue(dsl.isOpcaoMarcada("elementosForm:comidaFavorita:0"));
     }
 
     @Test
     public void deveInteragirComComboBox() {
-        WebElement elemento = driver.findElement(By.id("elementosForm:escolaridade"));
-        Select combo = new Select(elemento);
-        combo.selectByVisibleText("2o grau incompleto");
+        dsl.selecionaOpcaoCombo("elementosForm:escolaridade", "2o grau incompleto");
 
-        Assert.assertEquals("2o grau incompleto", combo.getFirstSelectedOption().getText());
+        Assert.assertEquals("2o grau incompleto", dsl.obtemValorCombo("elementosForm:escolaridade"));
     }
 
     @Test
@@ -91,12 +90,12 @@ public class TestComponentes {
 
     @Test
     public void deveInteragirComListBox() {
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "Natacao");
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "Corrida");
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "O que eh esporte?");
+
         WebElement elemento = driver.findElement(By.id("elementosForm:esportes"));
         Select combo = new Select(elemento);
-
-        combo.selectByVisibleText("Natacao");
-        combo.selectByVisibleText("Corrida");
-        combo.selectByVisibleText("O que eh esporte?");
 
         List<WebElement> allSelectedOptions = combo.getAllSelectedOptions();
 
@@ -105,141 +104,121 @@ public class TestComponentes {
 
     @Test
     public void deveInteragirComButtons() {
-        WebElement botao = driver.findElement(By.id("buttonSimple"));
+        dsl.clicaBotao("buttonSimple");
 
-        botao.click();
-
-        Assert.assertEquals("Obrigado!", botao.getAttribute("value"));
+        Assert.assertEquals("Obrigado!", dsl.obtemValorBotao("buttonSimple"));
     }
 
     @Test
     public void deveInteragirComLinks() {
-        driver.findElement(By.linkText("Voltar")).click();
+        dsl.clicaLink("Voltar");
 
-        Assert.assertEquals("Voltou!", driver.findElement(By.id("resultado")).getText());
+        Assert.assertEquals("Voltou!", dsl.obtemTexto("resultado"));
+    }
+
+    @Test
+    public void deveBuscarTextosNaPagina() {
+        Assert.assertEquals("Campo de Treinamento", dsl.obtemTexto(By.tagName("h3")));
+        Assert.assertEquals("Cuidado onde clica, muitas armadilhas...", dsl.obtemTexto(By.className("facilAchar")));
     }
 
     @Test
     public void validaCampoNome() {
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert popup = driver.switchTo().alert();
-
-        Assert.assertEquals("Nome eh obrigatorio", popup.getText());
+        Assert.assertEquals("Nome eh obrigatorio", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaCampoSobrenome() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert popup = driver.switchTo().alert();
-
-        Assert.assertEquals("Sobrenome eh obrigatorio", popup.getText());
+        Assert.assertEquals("Sobrenome eh obrigatorio", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaSexoSelecionado() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Assert.assertEquals("Sexo eh obrigatorio", driver.switchTo().alert().getText());
+        Assert.assertEquals("Sexo eh obrigatorio", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaComidaCarneXVegan() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
-        driver.findElement(By.id("elementosForm:comidaFavorita:0")).click();
-        driver.findElement(By.id("elementosForm:comidaFavorita:3")).click();
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaOpcao("elementosForm:sexo:0");
+        dsl.clicaOpcao("elementosForm:comidaFavorita:0");
+        dsl.clicaOpcao("elementosForm:comidaFavorita:3");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert popup = driver.switchTo().alert();
-
-        Assert.assertEquals("Tem certeza que voce eh vegetariano?", popup.getText());
+        Assert.assertEquals("Tem certeza que voce eh vegetariano?", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaComidaFrangoXVegan() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
-        driver.findElement(By.id("elementosForm:comidaFavorita:1")).click();
-        driver.findElement(By.id("elementosForm:comidaFavorita:3")).click();
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaOpcao("elementosForm:sexo:0");
+        dsl.clicaOpcao("elementosForm:comidaFavorita:1");
+        dsl.clicaOpcao("elementosForm:comidaFavorita:3");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert popup = driver.switchTo().alert();
-
-        Assert.assertEquals("Tem certeza que voce eh vegetariano?", popup.getText());
+        Assert.assertEquals("Tem certeza que voce eh vegetariano?", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaEsporteNatacaoXDuvida() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaOpcao("elementosForm:sexo:0");
 
-        WebElement esportes = driver.findElement(By.id("elementosForm:esportes"));
-        Select opcoesEsportes = new Select(esportes);
-        opcoesEsportes.selectByVisibleText("Natacao");
-        opcoesEsportes.selectByVisibleText("O que eh esporte?");
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "Natacao");
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "O que eh esporte?");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert alerta = driver.switchTo().alert();
-
-        Assert.assertEquals("Voce faz esporte ou nao?", alerta.getText());
+        Assert.assertEquals("Voce faz esporte ou nao?", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaEsporteFutebolXDuvida() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaOpcao("elementosForm:sexo:0");
 
-        WebElement esportes = driver.findElement(By.id("elementosForm:esportes"));
-        Select opcoesEsportes = new Select(esportes);
-        opcoesEsportes.selectByVisibleText("Futebol");
-        opcoesEsportes.selectByVisibleText("O que eh esporte?");
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "Futebol");
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "O que eh esporte?");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert alerta = driver.switchTo().alert();
-
-        Assert.assertEquals("Voce faz esporte ou nao?", alerta.getText());
+        Assert.assertEquals("Voce faz esporte ou nao?", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaEsporteCorridaXDuvida() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaOpcao("elementosForm:sexo:0");
 
-        WebElement esportes = driver.findElement(By.id("elementosForm:esportes"));
-        Select opcoesEsportes = new Select(esportes);
-        opcoesEsportes.selectByVisibleText("Corrida");
-        opcoesEsportes.selectByVisibleText("O que eh esporte?");
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "Corrida");
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "O que eh esporte?");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert alerta = driver.switchTo().alert();
-
-        Assert.assertEquals("Voce faz esporte ou nao?", alerta.getText());
+        Assert.assertEquals("Voce faz esporte ou nao?", dsl.obtemTextoAlert());
     }
 
     @Test
     public void validaEsporteKarateXDuvida() {
-        driver.findElement(By.id("elementosForm:nome")).sendKeys("Nome");
-        driver.findElement(By.id("elementosForm:sobrenome")).sendKeys("Sobrenome");
-        driver.findElement(By.id("elementosForm:sexo:0")).click();
+        dsl.escreve("elementosForm:nome", "Diego");
+        dsl.escreve("elementosForm:sobrenome", "Chagas");
+        dsl.clicaOpcao("elementosForm:sexo:0");
 
-        WebElement esportes = driver.findElement(By.id("elementosForm:esportes"));
-        Select opcoesEsportes = new Select(esportes);
-        opcoesEsportes.selectByVisibleText("Karate");
-        opcoesEsportes.selectByVisibleText("O que eh esporte?");
-        driver.findElement(By.id("elementosForm:cadastrar")).click();
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "Karate");
+        dsl.selecionaOpcaoCombo("elementosForm:esportes", "O que eh esporte?");
+        dsl.clicaBotao("elementosForm:cadastrar");
 
-        Alert alerta = driver.switchTo().alert();
-
-        Assert.assertEquals("Voce faz esporte ou nao?", alerta.getText());
+        Assert.assertEquals("Voce faz esporte ou nao?", dsl.obtemTextoAlert());
     }
 }
